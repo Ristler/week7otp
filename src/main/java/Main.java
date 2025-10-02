@@ -10,9 +10,7 @@ public class Main extends Application {
     private Label resultLabel = new Label();
 
 
-    private double fahrenheit;
-    private double celsius;
-    private double kelvin;
+    private double result;
 
     public static void main(String[] args) {
         launch(args);
@@ -33,7 +31,7 @@ public class Main extends Application {
         convertButton.setOnAction(e -> {
             try {
                 double input = Double.parseDouble(tempField.getText());
-                double result = TempConverter.convert(choice, input);
+                result = TempConverter.convert(choice, input);
                 resultLabel.setText(String.format("%.2f", result));
             } catch (NumberFormatException ex) {
                 resultLabel.setText("Invalid input!");
@@ -47,8 +45,11 @@ public class Main extends Application {
 
 
         Button saveButton = new Button("Save to DB");
+
+
         saveButton.setOnAction(e -> Database.saveTemperature(
-                Double.parseDouble(tempField.getText()), fahrenheit, resultLabel));
+                Double.parseDouble(tempField.getText()), result, choice, resultLabel));
+
 
         VBox root = new VBox(10, tempField, convertButton,
                 celsiusToFahrenheitButton,
