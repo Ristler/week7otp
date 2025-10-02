@@ -1,27 +1,19 @@
 pipeline {
     agent any
-    tools{
-        maven 'Maven 3.9.11'
 
+    tools {
+        maven 'Maven 3.9.11'
     }
 
     environment {
-        PATH = "C:\\Program Files\\Docker\\Docker\\resources\\bin;${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'Docker_Hub'
         DOCKER_IMAGE = 'ristler/javafx_with_db2'
         DOCKER_TAG = 'latest'
+
+        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
     }
 
     stages {
-        stage('Setup Maven') {
-            steps {
-                script {
-                    def mvnHome = tool name: 'Maven 3.9.11', type: 'maven'
-                    env.PATH = "${mvnHome}/bin:${env.PATH}"
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 git branch: 'master', url: 'https://github.com/Ristler/week7otp.git'
@@ -31,11 +23,7 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn clean package -DskipTests'
-                    } else {
-                        bat 'mvn clean package -DskipTests'
-                    }
+                    sh 'mvn clean package -DskipTests'
                 }
             }
         }
@@ -43,11 +31,7 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh 'mvn test'
-                    } else {
-                        bat 'mvn test'
-                    }
+                    sh 'mvn test'
                 }
             }
         }
@@ -55,11 +39,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                    } else {
-                        bat "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                    }
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
                 }
             }
         }
@@ -75,12 +55,14 @@ pipeline {
         }
     }
 
-  post {
-    always {
-        junit(testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true)
-        jacoco(execPattern: '**/target/jacoco.exec', classPattern: '**/target/classes', sourcePattern: '**/src/main/java', inclusionPattern: '**/*.class', exclusionPattern: '')
+    post {
+        always {
+            junit(testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true)
+            jacoco(execPattern: '**/target/jacoco.exec',
+                   classPattern: '**/target/classes',
+                   sourcePattern: '**/src/main/java',
+                   inclusionPattern: '**/*.class',
+                   exclusionPattern: '')
+        }
     }
 }
-
-}
-
