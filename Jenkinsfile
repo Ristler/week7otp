@@ -9,9 +9,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'Docker_Hub'
         DOCKER_IMAGE = 'ristler/javafx_with_db2'
         DOCKER_TAG = 'latest'
-
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
-        DOCKER_PATH = "/Applications/Docker.app/Contents/Resources/bin/docker"
+        PATH = "/usr/local/bin:/usr/bin:/bin:${env.PATH}"
     }
 
     stages {
@@ -33,31 +31,30 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Docker Login') {
             steps {
-                sh "${env.DOCKER_PATH} build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh "docker login -u $USER -p $PASS"
+                }
             }
         }
 
-        stage('Push Docker Image to Docker Hub') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS_ID) {
-                        sh "${env.DOCKER_PATH} push ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                    }
-                }
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
             }
         }
     }
 
     post {
         always {
-            junit(testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true)
-            jacoco(execPattern: '**/target/jacoco.exec',
-                   classPattern: '**/target/classes',
-                   sourcePattern: '**/src/main/java',
-                   inclusionPattern: '**/*.class',
-                   exclusionPattern: '')
+            junit('**/target/surefire-reports/*.xml')
         }
     }
 }
