@@ -11,6 +11,7 @@ pipeline {
         DOCKER_TAG = 'latest'
 
         PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${env.PATH}"
+        DOCKER_PATH = "/Applications/Docker.app/Contents/Resources/bin/docker"
     }
 
     stages {
@@ -22,25 +23,19 @@ pipeline {
 
         stage('Build') {
             steps {
-                script {
-                    sh 'mvn clean package -DskipTests'
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    sh 'mvn test'
-                }
+                sh 'mvn test'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                }
+                sh "${env.DOCKER_PATH} build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
@@ -48,7 +43,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS_ID) {
-                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
+                        sh "${env.DOCKER_PATH} push ${DOCKER_IMAGE}:${DOCKER_TAG}"
                     }
                 }
             }
