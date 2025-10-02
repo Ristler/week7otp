@@ -6,7 +6,7 @@ pipeline {
 
     environment {
         PATH = "/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
-        DOCKERHUB_CREDENTIALS_ID = 'Docker_Hub'
+        DOCKERHUB_CREDENTIALS_ID = 'docker_hub'
         DOCKER_IMAGE = 'ristler/javafx_with_db2'
         DOCKER_TAG = 'latest'
     }
@@ -29,35 +29,33 @@ pipeline {
 
         stage('Build') {
             steps {
-                script {
-                    // macOS will use sh
-                    sh 'mvn clean package -DskipTests'
-                }
+                sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    sh 'mvn test'
-                }
+                sh 'mvn test'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
             }
         }
 
         stage('Push Docker Image to Docker Hub') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', env.DOCKERHUB_CREDENTIALS_ID) {
-                        docker.image("${DOCKER_IMAGE}:${DOCKER_TAG}").push()
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: env.DOCKERHUB_CREDENTIALS_ID,
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        docker login -u $DOCKER_USER -p $DOCKER_PASS
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
                 }
             }
         }
